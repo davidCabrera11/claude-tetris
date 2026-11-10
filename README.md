@@ -86,6 +86,10 @@ Después abre `http://localhost:8000` en el navegador.
 | `Espacio` | Hard drop (caída instantánea)     |
 | `P`       | Pausar / reanudar                 |
 
+### Tema claro / oscuro
+
+El botón bajo el título cambia entre modo oscuro (por defecto) y modo claro. La elección se guarda en `localStorage`. Los colores del tema están definidos como variables CSS en `style.css` (`:root` y `[data-theme="light"]`).
+
 ---
 
 ## Cómo funciona
