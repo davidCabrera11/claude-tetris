@@ -60,4 +60,6 @@ jobs:
                - Si existe, actualízalo con `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<id> -f body=...`.
                - Si no existe, créalo con `gh issue comment ${{ github.event.issue.number }} --body ...`.
 
+            FORMATO: todo lo que publiques en el comentario debe estar en Markdown compatible con GitHub (GitHub Flavored Markdown): encabezados (`###`), **negritas**, listas con `-`, código en línea con backticks (`archivo:función`), bloques de código con triple backtick y lenguaje (```js), y enlaces o referencias válidas. No uses HTML salvo el marcador oculto inicial. Al pasar el cuerpo por `gh`, asegúrate de que los saltos de línea se conserven (usa `--body-file` o un heredoc) para que el Markdown se renderice correctamente.
+
             Restricciones: NO modifiques código, NO crees ramas ni PRs, NO cierres el issue. Solo asigna labels y publica/actualiza el comentario de diagnóstico.
