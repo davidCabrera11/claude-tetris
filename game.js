@@ -286,6 +286,8 @@ function loop(ts) {
     }
   }
   draw();
+  // endGame() cancela el frame, pero aquí se re-agendaría: no continuar tras game over
+  if (gameOver) return;
   animId = requestAnimationFrame(loop);
 }
 
