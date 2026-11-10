@@ -1,0 +1,63 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+concurrency:
+  group: issue-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    # Evita bucles con bots y no corre sobre PRs
+    if: |
+      github.event.issue.pull_request == null &&
+      github.actor != 'github-actions[bot]' &&
+      github.actor != 'claude[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Analyze issue with Claude
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --allowedTools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*),Bash(gh api:*),Read,Glob,Grep"
+          prompt: |
+            Eres el asistente de triage de issues del repositorio ${{ github.repository }} (un Tetris en JavaScript vanilla con HTML5 Canvas; lee CLAUDE.md para entender la arquitectura).
+
+            Se acaba de ${{ github.event.action == 'opened' && 'crear' || 'editar' }} el issue #${{ github.event.issue.number }}. Realiza lo siguiente:
+
+            1. Lee el issue con `gh issue view ${{ github.event.issue.number }} --json title,body,labels,author`.
+
+            2. LABELS: obtén los labels existentes con `gh label list` y asigna los más apropiados usando `gh issue edit ${{ github.event.issue.number }} --add-label ...`.
+               - Usa SOLO labels que ya existan; nunca crees nuevos.
+               - Normalmente 1 label de tipo (bug, enhancement, documentation, question) y, si aplica, adicionales (accessibility, good first issue, help wanted, duplicate, invalid, wontfix).
+               - Si el issue fue editado y algún label que tú asignaste antes ya no aplica, quítalo con `--remove-label`. No toques labels que haya puesto una persona.
+
+            3. DIAGNÓSTICO: explora el código relevante (solo lectura: Read, Glob, Grep) y redacta en español un diagnóstico general con estas secciones:
+               - **Resumen**: qué plantea el issue, en 1-2 frases.
+               - **Clasificación**: labels asignados y por qué.
+               - **Causa probable / áreas afectadas**: archivos y funciones concretas (formato `archivo:función`), explicando el flujo de código involucrado.
+               - **Enfoque de solución sugerido**: pasos concretos para implementarla, riesgos y casos borde.
+               - **Información faltante**: preguntas abiertas para quien reportó el issue (omitir si no hay).
+               Sé específico y no inventes: si no puedes determinar la causa, dilo.
+
+            4. PUBLICAR: el diagnóstico debe ir en UN SOLO comentario que empiece con el marcador oculto `<!-- claude-triage -->`.
+               - Busca si ya existe un comentario con ese marcador: `gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments --jq '.[] | select(.body | startswith("<!-- claude-triage -->")) | .id'`.
+               - Si existe, actualízalo con `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<id> -f body=...`.
+               - Si no existe, créalo con `gh issue comment ${{ github.event.issue.number }} --body ...`.
+
+            Restricciones: NO modifiques código, NO crees ramas ni PRs, NO cierres el issue. Solo asigna labels y publica/actualiza el comentario de diagnóstico.
