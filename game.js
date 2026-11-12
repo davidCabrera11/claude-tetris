@@ -80,6 +80,7 @@ function setTheme(newTheme, persist = true) {
   if (current && next) { draw(); drawNext(); }
 }
 
+let combo = 0, bestCombo = 0;
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 
 function createBoard() {
@@ -148,7 +149,11 @@ function clearLines() {
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    combo++;
+    bestCombo = Math.max(bestCombo, combo);
     updateHUD();
+  } else {
+    combo = 0;
   }
 }
 
@@ -264,6 +269,7 @@ function endGame() {
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
   overlay.classList.remove('hidden');
+  recordGameEnd(score, lines, level, bestCombo);
 }
 
 function togglePause() {
@@ -299,6 +305,9 @@ function loop(ts) {
 }
 
 function init() {
+  resetRecordUI();
+  combo = 0;
+  bestCombo = 0;
   board = createBoard();
   score = 0;
   lines = 0;
@@ -317,6 +326,7 @@ function init() {
 }
 
 document.addEventListener('keydown', e => {
+  if (e.target instanceof HTMLInputElement || (e.target.id || '').startsWith('records-')) return; // escribiendo el nombre / botón de records
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
