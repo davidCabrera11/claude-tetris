@@ -198,14 +198,8 @@ function updateHUD() {
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = (theme === 'light' ? COLORS_LIGHT : COLORS)[colorIndex];
-  context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = themeColors.highlight;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
-  context.globalAlpha = 1;
+  const color = SKINS[skin].palette(theme)[colorIndex];
+  SKINS[skin].drawBlock(context, x, y, color, size, alpha ?? 1);
 }
 
 function drawGrid() {
@@ -317,6 +311,7 @@ function init() {
 }
 
 document.addEventListener('keydown', e => {
+  if (e.target && e.target.id === 'skin-select') return; // el select maneja sus propias teclas
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
@@ -351,5 +346,6 @@ themeToggle.addEventListener('click', () => {
 let savedTheme = null;
 try { savedTheme = localStorage.getItem(THEME_KEY); } catch (e) { /* ignorar */ }
 setTheme(savedTheme === 'light' ? 'light' : 'dark', false);
+initSkinSelect();
 
 init();
